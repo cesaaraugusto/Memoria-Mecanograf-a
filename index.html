@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Práctica de Caligrafía Alineada</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+
+        .container {
+            position: relative;
+            width: 80vw;
+            max-width: 800px;
+            margin: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 20px;
+            line-height: 1.5;
+            letter-spacing: 0.3px;
+        }
+
+        .text-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 500px;
+            padding: 15px 20px;
+            white-space: pre-wrap;
+            overflow: hidden;
+            pointer-events: none;
+            color: rgba(0, 0, 0, 0.2);
+            z-index: 0;
+        }
+
+        #writingArea {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            padding: 15px 20px;
+            background-color: transparent;
+            border: 2px solid #ccc;
+            resize: vertical;
+            z-index: 2;
+            color: rgba(0, 0, 0, 0.8);
+            caret-color: black;
+            font: inherit;
+            line-height: inherit;
+            letter-spacing: inherit;
+            overflow: auto;
+        }
+
+        #highlightLayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: calc(100% - 40px);
+            height: 500px;
+            padding: 15px 20px;
+            z-index: 1;
+            pointer-events: none;
+            white-space: pre-wrap;
+        }
+
+        .char-box {
+            display: inline-block;
+            width: 12.3px;
+            height: 24px;
+            position: relative;
+        }
+
+        .correct { background-color: #90ee9055 !important; }
+        .incorrect { background-color: #ffb6c155 !important; }
+        .corrected { background-color: #ffffe055 !important; }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Práctica de Caligrafía Perfecta</h1>
+    <input type="file" id="fileInput" accept=".txt" hidden>
+    <button onclick="document.getElementById('fileInput').click()">Cargar Texto</button>
+    
+    <div class="container">
+        <div id="referenceText" class="text-layer"></div>
+        <div id="highlightLayer"></div>
+        <textarea id="writingArea" spellcheck="false"></textarea>
+    </div>
+
+    <script>
+        let referenceContent = [];
+        let lastState = [];
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    referenceContent = e.target.result.split('');
+                    document.getElementById('referenceText').innerHTML = e.target.result
+                        .replace(/ /g, '&nbsp;')
+                        .replace(/\n/g, '<br>');
+                    initHighlightLayer();
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function initHighlightLayer() {
+            const highlightLayer = document.getElementById('highlightLayer');
+            highlightLayer.innerHTML = referenceContent.map(c => {
+                const char = c === ' ' ? '&nbsp;' : c;
+                return `<span class="char-box">${char}</span>`;
+            }).join('');
+        }
+
+        function updateHighlights() {
+            const userText = document.getElementById('writingArea').value.split('');
+            const highlights = document.querySelectorAll('#highlightLayer .char-box');
+            
+            highlights.forEach((highlight, index) => {
+                highlight.className = 'char-box';
+                if (index >= userText.length) return;
+                
+                const refChar = referenceContent[index];
+                const userChar = userText[index];
+                const prevChar = lastState[index];
+
+                if (userChar === refChar) {
+                    highlight.classList.add(prevChar !== refChar ? 'corrected' : 'correct');
+                } else {
+                    highlight.classList.add('incorrect');
+                }
+            });
+            
+            lastState = [...userText];
+        }
+
+        // Sincronización perfecta de scroll
+        const writingArea = document.getElementById('writingArea');
+        const syncScroll = () => {
+            document.getElementById('referenceText').scrollTop = writingArea.scrollTop;
+            document.getElementById('referenceText').scrollLeft = writingArea.scrollLeft;
+            document.getElementById('highlightLayer').scrollTop = writingArea.scrollTop;
+            document.getElementById('highlightLayer').scrollLeft = writingArea.scrollLeft;
+        };
+
+        writingArea.addEventListener('input', () => {
+            updateHighlights();
+            syncScroll();
+        });
+
+        writingArea.addEventListener('scroll', syncScroll);
+    </script>
+</body>
+</html>
