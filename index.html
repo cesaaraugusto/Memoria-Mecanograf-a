@@ -108,7 +108,7 @@
 
     <script>
         let referenceContent = [];
-        let lastState = [];
+        let hasBeenIncorrect = [];
 
         document.getElementById('fileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
@@ -116,6 +116,7 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     referenceContent = e.target.result.split('');
+                    hasBeenIncorrect = new Array(referenceContent.length).fill(false);
                     document.getElementById('referenceText').innerHTML = e.target.result
                         .replace(/ /g, '&nbsp;')
                         .replace(/\n/g, '<br>');
@@ -137,25 +138,32 @@
             const userText = document.getElementById('writingArea').value.split('');
             const highlights = document.querySelectorAll('#highlightLayer .char-box');
             
+            // Actualizar estado de errores
+            userText.forEach((userChar, index) => {
+                if (index >= referenceContent.length) return;
+                const refChar = referenceContent[index];
+                if (userChar !== refChar) {
+                    hasBeenIncorrect[index] = true;
+                }
+            });
+            
+            // Aplicar estilos
             highlights.forEach((highlight, index) => {
                 highlight.className = 'char-box';
                 if (index >= userText.length) return;
                 
                 const refChar = referenceContent[index];
                 const userChar = userText[index];
-                const prevChar = lastState[index];
-
+                
                 if (userChar === refChar) {
-                    highlight.classList.add(prevChar !== refChar ? 'corrected' : 'correct');
+                    highlight.classList.add(hasBeenIncorrect[index] ? 'corrected' : 'correct');
                 } else {
                     highlight.classList.add('incorrect');
                 }
             });
-            
-            lastState = [...userText];
         }
 
-        // Sincronización perfecta de scroll
+        // Sincronización de scroll
         const writingArea = document.getElementById('writingArea');
         const syncScroll = () => {
             document.getElementById('referenceText').scrollTop = writingArea.scrollTop;
